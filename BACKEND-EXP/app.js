@@ -5,7 +5,7 @@ app.use(express.json());
 const cors = require("cors")
 app.use(cors())
 
-const userRoutes = require("./src/routes/userRoutes");
+const userRoutes = require("./src/routes/UserRoutes");
 app.use("/user", userRoutes);
 
 const expCategoryRoutes = require("./src/routes/ExpCategoryRoutes")
