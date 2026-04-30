@@ -3,4 +3,5 @@ const categoryController = require("../controllers/ExpCatController")
 const authMiddleware =require("../middleware/AuthMiddleware")
 router.post("/",authMiddleware,categoryController.createExpenseCategory)
 router.get("/userCategory",authMiddleware,categoryController.getExpensecategoriesByUserId)
+router.delete("/deletemycat/:id",authMiddleware,categoryController.deleteCategory)
 module.exports = router

@@ -7,6 +7,7 @@ export const GetMyCategories = () => {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
+
   const getAllCategories = async () => {
     try {
       const res = await axios.get("/expCat/userCategory")
@@ -19,6 +20,26 @@ export const GetMyCategories = () => {
     }
   }
 
+  const handleDelete = async (id) => {
+    try {
+      const confirmDelete = window.confirm("Are you sure you want to delete?")
+      if (!confirmDelete) return
+
+      const res = await axios.delete(`/expCat/deletemycat/${id}`)
+
+      if (res.status === 200) {
+        toast.success("Category Deleted Successfully")
+
+        getAllCategories()
+      }
+
+    } catch (error) {
+      console.error(error)
+      toast.error("Error while deleting")
+    }
+  }
+
+  // 🔹 CALL ON LOAD
   useEffect(() => {
     getAllCategories()
   }, [])
@@ -30,17 +51,17 @@ export const GetMyCategories = () => {
         My Categories
       </h1>
 
-      {/* Loading */}
+      {/* 🔹 Loading */}
       {loading && (
         <p className="text-[var(--color-text-muted)]">Loading...</p>
       )}
 
-      {/* Empty */}
+      {/* 🔹 Empty */}
       {!loading && categories.length === 0 && (
         <p className="text-[var(--color-text-muted)]">No categories found</p>
       )}
 
-      {/* Cards Grid */}
+      {/* 🔹 Cards */}
       {!loading && categories.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
@@ -69,15 +90,8 @@ export const GetMyCategories = () => {
               <div className="flex justify-end gap-2">
 
                 <button
-                  className="px-3 py-1 text-sm rounded-md bg-[var(--color-primary-100)] text-[var(--color-primary)] hover:bg-[var(--color-primary-200)]"
-                  onClick={() => handleEdit(category._id)}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="px-3 py-1 text-sm rounded-md bg-red-100 text-red-600 hover:bg-red-200"
                   onClick={() => handleDelete(category._id)}
+                  className="px-3 py-1 text-sm rounded-md bg-red-100 text-red-600 hover:bg-red-200"
                 >
                   Delete
                 </button>
@@ -89,31 +103,7 @@ export const GetMyCategories = () => {
 
         </div>
       )}
+
     </div>
   )
-
-  // Edit
-  function handleEdit(id) {
-    toast.info("Edit coming soon ✏️")
-    console.log(id)
-  }
-
-  // Delete
-  async function handleDelete(id) {
-    try {
-      const confirmDelete = window.confirm("Delete this category?")
-      if (!confirmDelete) return
-
-      const res = await axios.delete(`/expCat/${id}`)
-
-      if (res.status === 200) {
-        toast.success("Deleted successfully")
-        setCategories(prev => prev.filter(c => c._id !== id))
-      }
-
-    } catch (error) {
-      console.error(error)
-      toast.error("Delete failed")
-    }
-  }
 }
