@@ -60,14 +60,14 @@ export const UserProfile = () => {
     const handleFileChange = async (e) => {
         const file = e.target.files[0]
         if (!file) return
-        
+
         try {
             setUploadingPic(true)
             const formData = new FormData()
             formData.append("profilePic", file)
-            
+
             const res = await axiosInstance.put("/user/uploadprofilepic", formData)
-            
+
             if (res.status === 200) {
                 toast.success("Profile picture updated")
                 setUser(res.data.data)
@@ -110,10 +110,10 @@ export const UserProfile = () => {
             <div className="w-full max-w-4xl bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
                 <div className="h-28 bg-slate-900"></div>
 
-                <div className="px-6 sm:px-8 pb-8 -mt-14">
+                <div className="px-6 sm:px-8 pb-8">
                     <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
                         <div className="flex flex-col sm:flex-row sm:items-end gap-5">
-                            <div className="relative group">
+                            <div className="relative group -mt-14 shrink-0">
                                 {
                                     user.profilePic ? (
                                         <img
@@ -144,11 +144,11 @@ export const UserProfile = () => {
                                 />
                             </div>
 
-                            <div className="pb-1">
+                            <div className="pb-1 sm:pt-2">
                                 <p className="text-sm font-semibold tracking-wide uppercase text-primary mb-1">
                                     Profile
                                 </p>
-                                <h1 className="text-3xl font-semibold text-slate-950">
+                                <h1 className="text-3xl font-semibold text-slate-950 truncate max-w-full">
                                     {user.firstName} {user.lastName}
                                 </h1>
                                 <p className="text-slate-500 mt-1">
@@ -156,9 +156,9 @@ export const UserProfile = () => {
                                 </p>
                             </div>
                         </div>
-                        
+
                         {!isEditing ? (
-                            <button 
+                            <button
                                 onClick={() => setIsEditing(true)}
                                 className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md transition-colors"
                             >
@@ -166,7 +166,7 @@ export const UserProfile = () => {
                             </button>
                         ) : (
                             <div className="flex gap-2">
-                                <button 
+                                <button
                                     onClick={() => {
                                         setIsEditing(false)
                                         setEditData({
@@ -180,7 +180,7 @@ export const UserProfile = () => {
                                 >
                                     <X size={16} /> Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleSaveProfile}
                                     className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-slate-800 text-white font-medium rounded-md transition-colors"
                                 >

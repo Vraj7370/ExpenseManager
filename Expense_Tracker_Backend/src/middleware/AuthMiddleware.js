@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-const secret = "secret";
+const secret = process.env.JWT_SECRET || "secret";
 const authMiddleware = (req, res, next) => {
   //token --> rrq.headers
   //token should be bearer token..

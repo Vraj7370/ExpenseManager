@@ -12,7 +12,7 @@ const createIncomeCategory = async(req,res)=>{
             cat:savedInc
         })
     }catch(err){
-        res.status(201).json({
+            res.status(201).json({
             message:"error while saving incCat ",
             err:err
         })

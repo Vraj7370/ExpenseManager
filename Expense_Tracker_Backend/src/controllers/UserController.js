@@ -3,7 +3,7 @@ const bcrypt = require("bcrypt")
 const mailSend = require("../utils/MailUtil")
 const { uploadToCloudinary } = require("../utils/CloudinaryUtil")
 const jwt = require("jsonwebtoken")
-const secret = "secret" 
+const secret = process.env.JWT_SECRET || "secret" 
 
 const createUser = async (req, res) => {
     const { firstName, lastName, email, password } = req.body;
@@ -196,28 +196,44 @@ const uploadProfilePic = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const userId = req.user._id;
+        const loginUserId = req.user._id;
         const { firstName, lastName, age, gender } = req.body;
 
-        const updatedUser = await userSchema.findByIdAndUpdate(
-            userId,
-            { firstName, lastName, age, gender },
-            { new: true, runValidators: true }
+        const updateData = {};
+        if (firstName !== undefined) updateData.firstName = firstName;
+        if (lastName !== undefined) updateData.lastName = lastName;
+        if (age !== undefined) updateData.age = age === "" ? null : age;
+        if (gender !== undefined) {
+            updateData.gender = (gender === "" || gender === "Select Gender") ? null : gender;
+        }
+
+        const user = await userSchema.findByIdAndUpdate(
+            loginUserId,
+            updateData,
+            {
+                new: true,
+                runValidators: true
+            }
         ).select("-password");
 
-        if (!updatedUser) {
-            return res.status(404).json({ message: "User not found" });
+        if (!user) {
+            return res.status(404).json({
+                message: "User not found"
+            });
         }
 
         res.status(200).json({
             message: "Profile updated successfully",
-            data: updatedUser
+            data: user
         });
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: "Error updating profile" });
+
+    } catch (error) {
+        console.log("Error :", error);
+        res.status(500).json({
+            message: "Something went wrong"
+        });
     }
-}
+};
 
 module.exports = {
     createUser,
