@@ -1,6 +1,7 @@
 const userSchema = require("../models/UserModel")
 const bcrypt = require("bcrypt")
 const mailSend = require("../utils/MailUtil")
+const { uploadToCloudinary } = require("../utils/CloudinaryUtil")
 const jwt = require("jsonwebtoken")
 const secret = "secret" 
 
@@ -166,10 +167,64 @@ const getProfile = async (req, res) => {
 
 }
 
+const uploadProfilePic = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const file = req.file;
+
+        if (!file) {
+            return res.status(400).json({ message: "No file uploaded" });
+        }
+
+        const cloudinaryResponse = await uploadToCloudinary(file.path);
+        
+        if (!cloudinaryResponse) {
+            return res.status(500).json({ message: "Error uploading to cloudinary" });
+        }
+
+        const updatedUser = await userSchema.findByIdAndUpdate(userId, { profilePic: cloudinaryResponse.secure_url }, { new: true }).select("-password");
+        
+        res.status(200).json({
+            message: "Profile picture uploaded successfully",
+            data: updatedUser
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Error uploading profile picture" });
+    }
+}
+
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { firstName, lastName, age, gender } = req.body;
+
+        const updatedUser = await userSchema.findByIdAndUpdate(
+            userId,
+            { firstName, lastName, age, gender },
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            message: "Profile updated successfully",
+            data: updatedUser
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Error updating profile" });
+    }
+}
+
 module.exports = {
     createUser,
     getAllUsers,
     deleteUser,
     loginUser,
-    getProfile
+    getProfile,
+    uploadProfilePic,
+    updateProfile
 }

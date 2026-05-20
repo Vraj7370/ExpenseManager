@@ -1,5 +1,5 @@
 const expenseSchema = require("../models/ExpenseModel")
-
+const { uploadToCloudinary } = require("../utils/CloudinaryUtil")
 const createExpense = async(req,res)=>{
 
 
@@ -111,9 +111,20 @@ const uploadReceipt = async(req,res)=>{
 
     const expId = req.body.expId;
     const file = req.file;
+
+    if(!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+    }
+
     //clodudiary upload --> req.file.path
     //return cloudinaryResponse --> secure_url
-    const updateExp = await expenseSchema.findByIdAndUpdate(expId,{expReceipt:file.path})
+    const cloudinaryResponse = await uploadToCloudinary(file.path);
+    
+    if (!cloudinaryResponse) {
+        return res.status(500).json({ message: "Error uploading to cloudinary" });
+    }
+
+    const updateExp = await expenseSchema.findByIdAndUpdate(expId,{expReceipt:cloudinaryResponse.secure_url})
     res.status(200).json({
         message:"receipt uploaded successfully",
         data:updateExp
