@@ -1,14 +1,23 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import axiosInstance from '../api/axiosInstance'
 import { toast } from 'react-toastify'
+import { useNavigate } from 'react-router-dom'
 
 export const UserProfile = () => {
 
     const [user, setUser] = useState({})
     const [loading, setLoading] = useState(true)
+    const navigate = useNavigate()
 
-    const getProfile = async () => {
+    const getProfile = useCallback(async () => {
         try {
+            const token = localStorage.getItem("token")
+
+            if (!token) {
+                toast.error("Please login first")
+                navigate("/login")
+                return
+            }
 
             const res = await axiosInstance.get("/user/profile")
 
@@ -18,16 +27,24 @@ export const UserProfile = () => {
 
             console.log(error)
 
-            toast.error("Failed to load profile")
+            if (error.response?.status === 401) {
+                localStorage.removeItem("token")
+                document.cookie = "token=; path=/; max-age=0"
+                toast.error("Session expired. Please login again.")
+                navigate("/login")
+                return
+            }
+
+            toast.error(error.response?.data?.message || "Failed to load profile")
 
         } finally {
             setLoading(false)
         }
-    }
+    }, [navigate])
 
     useEffect(() => {
         getProfile()
-    }, [])
+    }, [getProfile])
 
     if (loading) {
         return (

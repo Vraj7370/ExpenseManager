@@ -5,12 +5,34 @@ const jwt = require("jsonwebtoken")
 const secret = "secret" 
 
 const createUser = async (req, res) => {
+    const { firstName, lastName, email, password } = req.body;
 
-    const hashedpassword = await bcrypt.hash(req.body.password, 10)
+    if (!firstName || !lastName || !email || !password) {
+        return res.status(400).json({
+            message: "firstName, lastName, email and password are required",
+        });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({
+            message: "password must be at least 6 characters",
+        });
+    }
 
     try {
+        const existingUser = await userSchema.findOne({ email: email.toLowerCase() });
+
+        if (existingUser) {
+            return res.status(409).json({
+                message: "email already registered",
+            });
+        }
+
+        const hashedpassword = await bcrypt.hash(password, 10)
+
         const savedUser = await userSchema.create({
             ...req.body,
+            email: email.toLowerCase(),
             password: hashedpassword
         });
 
@@ -25,8 +47,14 @@ const createUser = async (req, res) => {
             console.log("Email failed ❌", mailErr.message);
         }
 
+        const userPayload = savedUser.toObject();
+        delete userPayload.password;
+        const token = jwt.sign(userPayload, secret);
+
         res.status(201).json({
-            message: "user created..",
+            message: "user created successfully",
+            token: token,
+            data: userPayload,
         });
 
     }
@@ -76,15 +104,18 @@ const deleteUser = async (req, res) => {
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
-        const foundUserFromEmail = await userSchema.findOne({ email: email })
+        const foundUserFromEmail = await userSchema.findOne({ email: email?.toLowerCase() })
         console.log(foundUserFromEmail)
 
         if (foundUserFromEmail) {
             if (bcrypt.compareSync(password, foundUserFromEmail.password)) {
-                const token = jwt.sign(foundUserFromEmail.toObject(), secret);
+                const userPayload = foundUserFromEmail.toObject();
+                delete userPayload.password;
+                const token = jwt.sign(userPayload, secret);
                 res.status(200).json({
                     message: "Login Success",
-                    token: token
+                    token: token,
+                    data: userPayload
                 })
             }
             else {
@@ -111,7 +142,13 @@ const getProfile = async (req, res) => {
 
   try {
     const userId = req.user._id
-    const user = await userSchema.findById(userId)
+    const user = await userSchema.findById(userId).select("-password")
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User profile not found"
+      })
+    }
 
     res.status(200).json({
       message: "Profile fetched successfully",

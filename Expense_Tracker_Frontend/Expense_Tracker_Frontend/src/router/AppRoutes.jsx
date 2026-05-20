@@ -9,6 +9,7 @@ import { MyExpenses } from "../user/MyExpenses"
 import { Report } from "../user/Report"
 import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
+import { Sigup } from "../common/Sigup"
 
 
 const AppRoutes = () => {
@@ -17,6 +18,10 @@ const AppRoutes = () => {
         {
             path: "/login",
             element: <Login />
+        },
+        {
+            path: "/signup",
+            element: <Sigup />
         },
         {
             path: "/",   // ✅ yaha "/" use karo
