@@ -43,7 +43,7 @@ export const Report1 = () => {
           CASH: 0,
           CARD: 0,
           UPI: 0,
-          CHEQUE: 0
+          CHECK: 0
         }
 
         res.data.data.map((exp) => {

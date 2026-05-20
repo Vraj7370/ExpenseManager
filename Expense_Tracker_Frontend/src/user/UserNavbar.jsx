@@ -1,8 +1,18 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { LogOut } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { clearAuth } from '../utils/auth';
 
 export const UserNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearAuth();
+    toast.success('Logged out successfully');
+    navigate('/login', { replace: true });
+  };
 
   // Array of links for easy management
   const navLinks = [
@@ -48,6 +58,17 @@ export const UserNavbar = () => {
                 </NavLink>
               ))}
             </div>
+          </div>
+
+          <div className="hidden sm:flex items-center shrink-0">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors"
+            >
+              <LogOut size={16} />
+              Log out
+            </button>
           </div>
           
           {/* Mobile menu button */}
@@ -96,6 +117,16 @@ export const UserNavbar = () => {
                 {link.name}
               </NavLink>
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                handleLogout();
+              }}
+              className="w-full text-left block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+            >
+              Log out
+            </button>
           </div>
         </div>
       )}

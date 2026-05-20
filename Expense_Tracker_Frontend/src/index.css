@@ -59,4 +59,99 @@
     background: #bad7c9;
     color: #11201a;
   }
+
+  html.dark {
+    color-scheme: dark;
+    --color-bg-base: #111827;
+    --color-bg-muted: #0b1220;
+    --color-text-base: #f3f4f6;
+    --color-text-muted: #9ca3af;
+    --color-primary: var(--color-primary-400);
+    --color-primary-hover: var(--color-primary-300);
+  }
+
+  html.dark ::selection {
+    background: #326650;
+    color: #f3f4f6;
+  }
+}
+
+/* Dark mode overrides for existing utility classes */
+html.dark .bg-white {
+  background-color: #1f2937 !important;
+}
+
+html.dark .bg-bg-muted,
+html.dark .bg-bg-base {
+  background-color: var(--color-bg-muted) !important;
+}
+
+html.dark .bg-slate-50 {
+  background-color: #1e293b !important;
+}
+
+html.dark .bg-slate-100 {
+  background-color: #334155 !important;
+}
+
+html.dark .bg-slate-900 {
+  background-color: #020617 !important;
+}
+
+html.dark .bg-primary-50 {
+  background-color: #1a2e26 !important;
+}
+
+html.dark .text-slate-950,
+html.dark .text-slate-900 {
+  color: #f9fafb !important;
+}
+
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #e5e7eb !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-primary-800 {
+  color: #bad7c9 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300 {
+  border-color: #374151 !important;
+}
+
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark select,
+html.dark textarea {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+  border-color: #4b5563 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-50:hover {
+  background-color: #374151 !important;
+}
+
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #4b5563 !important;
+}
+
+html.dark .hover\:text-slate-950:hover {
+  color: #f9fafb !important;
+}
+
+html.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.35) !important;
 }

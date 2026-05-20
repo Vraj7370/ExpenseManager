@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { clearAuth, getAuthToken } from '../utils/auth';
 
 // Helper function to get a cookie by name
 const getCookie = (name) => {
@@ -18,7 +19,7 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Assuming your token is stored in a cookie named 'token'
     // const token = getCookie('token');
-     const token = localStorage.getItem('token') || getCookie('token');
+     const token = getAuthToken() || getCookie('token');
      
     if (token) {
       config.headers.Authorization = `Bearer ${token}`; // Or however your backend expects it
@@ -27,6 +28,20 @@ axiosInstance.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  }
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearAuth();
+      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/signup';
+      if (!isAuthPage) {
+        window.location.replace('/login');
+      }
+    }
     return Promise.reject(error);
   }
 );

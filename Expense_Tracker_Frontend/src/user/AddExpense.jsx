@@ -75,12 +75,13 @@ export const AddExpense = () => {
       setLoading(true)
 
       if (selectedType === "income") {
-
-        data.income = data.amount
+        data.income = Number(data.amount)
         delete data.amount
 
         data.incomeCategory = data.expCat
         delete data.expCat
+      } else {
+        data.amount = Number(data.amount)
       }
 
       const res = await axiosInstance.post("/exp/", data)
@@ -300,7 +301,7 @@ export const AddExpense = () => {
                 <option value="CASH">Cash</option>
                 <option value="CARD">Card</option>
                 <option value="UPI">UPI</option>
-                <option value="CHEQUE">Cheque</option>
+                <option value="CHECK">Cheque</option>
               </select>
             </div>
           </div>

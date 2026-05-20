@@ -9,7 +9,9 @@ import { MyExpenses } from "../user/MyExpenses"
 import { Report } from "../user/Report"
 import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
+import { Settings } from "../user/Settings"
 import { Sigup } from "../common/Sigup"
+import { GuestRoute, ProtectedRoute } from "./RouteGuards"
 
 
 const AppRoutes = () => {
@@ -17,15 +19,27 @@ const AppRoutes = () => {
     const router = createBrowserRouter([
         {
             path: "/login",
-            element: <Login />
+            element: (
+                <GuestRoute>
+                    <Login />
+                </GuestRoute>
+            )
         },
         {
             path: "/signup",
-            element: <Sigup />
+            element: (
+                <GuestRoute>
+                    <Sigup />
+                </GuestRoute>
+            )
         },
         {
-            path: "/",   // ✅ yaha "/" use karo
-            element: <UserNavbar />,
+            path: "/",
+            element: (
+                <ProtectedRoute>
+                    <UserNavbar />
+                </ProtectedRoute>
+            ),
             children: [
                 {
                     path: "",   // default child route
@@ -58,6 +72,10 @@ const AppRoutes = () => {
                {
                 path:"user-profile",
                 element:<UserProfile/>
+               },
+               {
+                path:"settings",
+                element:<Settings />
                }
             ]
         }

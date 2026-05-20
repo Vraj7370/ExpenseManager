@@ -1,6 +1,6 @@
 const userSchema = require("../models/UserModel")
 const bcrypt = require("bcrypt")
-const mailSend = require("../utils/MailUtil")
+const { sendWelcomeEmail } = require("../utils/MailUtil")
 const { uploadToCloudinary } = require("../utils/CloudinaryUtil")
 const jwt = require("jsonwebtoken")
 const secret = process.env.JWT_SECRET || "secret" 
@@ -39,11 +39,10 @@ const createUser = async (req, res) => {
 
         // ✅ Email ko try-catch me daalo
         try {
-            await mailSend(
-                savedUser.email,
-                "Welcome Mail",
-                "Welcome to expense manager app"
-            );
+            await sendWelcomeEmail(savedUser.email, {
+                firstName: savedUser.firstName,
+                lastName: savedUser.lastName,
+            });
         } catch (mailErr) {
             console.log("Email failed ❌", mailErr.message);
         }
