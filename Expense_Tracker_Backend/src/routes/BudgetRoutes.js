@@ -9,7 +9,3 @@ router.put("/update/:id", authMiddleware, budgetController.updateBudget)
 router.delete("/delete/:id", authMiddleware, budgetController.deleteBudget)
 
 module.exports = router
-
-
-
-

@@ -10,6 +10,8 @@ import { Report } from "../user/Report"
 import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
 import { Settings } from "../user/Settings"
+import { AddBudget } from "../user/AddBudget"
+import { MyBudgets } from "../user/MyBudgets"
 import { Sigup } from "../common/Sigup"
 import { GuestRoute, ProtectedRoute } from "./RouteGuards"
 
@@ -60,6 +62,14 @@ const AppRoutes = () => {
                 {
                     path:"my-expenses",
                     element:<MyExpenses />
+                },
+                {
+                    path: "add-budget",
+                    element: <AddBudget />
+                },
+                {
+                    path: "my-budgets",
+                    element: <MyBudgets />
                 },
                 {
                     path:"reports",

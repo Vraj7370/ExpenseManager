@@ -1,4 +1,45 @@
 const budgetSchema = require("../models/BudgetModel")
+const expenseSchema = require("../models/ExpenseModel")
+
+const buildExpenseDateFilter = (budget) => {
+    const filter = {}
+    if (budget.createdDate) filter.$gte = budget.createdDate
+    if (budget.endDate) filter.$lte = budget.endDate
+    return Object.keys(filter).length ? filter : null
+}
+
+const getSpentForBudget = async (userId, budget) => {
+    const query = {
+        userId,
+        amount: { $exists: true },
+        income: { $exists: false }
+    }
+    const dateFilter = buildExpenseDateFilter(budget)
+    if (dateFilter) query.expenseDate = dateFilter
+
+    const result = await expenseSchema.aggregate([
+        { $match: query },
+        { $group: { _id: null, total: { $sum: "$amount" } } }
+    ])
+
+    return result[0]?.total || 0
+}
+
+const attachUsage = async (budget, userId) => {
+    const spent = await getSpentForBudget(userId, budget)
+    const maxAmount = budget.maxAmount || 0
+    const remaining = Math.max(0, maxAmount - spent)
+    const percentUsed = maxAmount > 0 ? Math.min(100, Math.round((spent / maxAmount) * 100)) : 0
+    const isExceeded = maxAmount > 0 && spent > maxAmount
+
+    return {
+        ...budget.toObject(),
+        spent,
+        remaining,
+        percentUsed,
+        isExceeded
+    }
+}
 
 const createBudget = async (req, res) => {
     try {
@@ -12,24 +53,28 @@ const createBudget = async (req, res) => {
 
         const { maxAmount, createdDate, endDate, exceedDate, budgetStatus } = req.body
 
-        if (maxAmount === undefined || maxAmount === null) {
+        const parsedAmount = Number(maxAmount)
+
+        if (maxAmount === undefined || maxAmount === null || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
             return res.status(400).json({
-                message: "maxAmount is required"
+                message: "maxAmount is required and must be a positive number"
             })
         }
 
         const savedBudget = await budgetSchema.create({
             userId,
-            maxAmount,
+            maxAmount: parsedAmount,
             createdDate: createdDate || new Date(),
             endDate,
             exceedDate,
             budgetStatus: budgetStatus || "active"
         })
 
+        const data = await attachUsage(savedBudget, userId)
+
         res.status(201).json({
             message: "budget created..",
-            data: savedBudget
+            data
         })
     } catch (err) {
         res.status(500).json({
@@ -42,7 +87,17 @@ const createBudget = async (req, res) => {
 const getBudgetsByUserId = async (req, res) => {
     try {
         const userId = req.user._id
-        const budgets = await budgetSchema.find({ userId })
+        const budgets = await budgetSchema.find({ userId }).sort({ createdDate: -1 })
+
+        if (req.query.usage === "true") {
+            const budgetsWithUsage = await Promise.all(
+                budgets.map((budget) => attachUsage(budget, userId))
+            )
+            return res.status(200).json({
+                message: "budgets fetched..",
+                data: budgetsWithUsage
+            })
+        }
 
         res.status(200).json({
             message: "budgets fetched..",
@@ -69,9 +124,13 @@ const getBudgetById = async (req, res) => {
             })
         }
 
+        const data = req.query.usage === "true"
+            ? await attachUsage(budget, userId)
+            : budget
+
         res.status(200).json({
             message: "budget fetched..",
-            data: budget
+            data
         })
     } catch (err) {
         res.status(500).json({
@@ -85,14 +144,35 @@ const updateBudget = async (req, res) => {
     try {
         const userId = req.user._id
         const id = req.params.id
+
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                message: "Request body missing. Send fields to update."
+            })
+        }
+
         const { maxAmount, createdDate, endDate, exceedDate, budgetStatus } = req.body
         const updateFields = {}
 
-        if (maxAmount !== undefined) updateFields.maxAmount = maxAmount
+        if (maxAmount !== undefined) {
+            const parsedAmount = Number(maxAmount)
+            if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+                return res.status(400).json({
+                    message: "maxAmount must be a positive number"
+                })
+            }
+            updateFields.maxAmount = parsedAmount
+        }
         if (createdDate !== undefined) updateFields.createdDate = createdDate
         if (endDate !== undefined) updateFields.endDate = endDate
         if (exceedDate !== undefined) updateFields.exceedDate = exceedDate
         if (budgetStatus !== undefined) updateFields.budgetStatus = budgetStatus
+
+        if (Object.keys(updateFields).length === 0) {
+            return res.status(400).json({
+                message: "No valid fields to update"
+            })
+        }
 
         const updatedBudget = await budgetSchema.findOneAndUpdate(
             { _id: id, userId },
@@ -106,9 +186,11 @@ const updateBudget = async (req, res) => {
             })
         }
 
+        const data = await attachUsage(updatedBudget, userId)
+
         res.status(200).json({
             message: "budget updated..",
-            data: updatedBudget
+            data
         })
     } catch (err) {
         res.status(500).json({

@@ -21,6 +21,8 @@ export const UserNavbar = () => {
     { name: 'Categories', path: 'my-categories' },
     { name: 'Add Record', path: 'add-expense' },
     { name: 'Records', path: 'my-expenses' },
+    { name: 'Add Budget', path: 'add-budget' },
+    { name: 'Budgets', path: 'my-budgets' },
     { name: 'Category Report', path: 'reports' },
     { name: 'Payment Report', path: 'report1' },
     { name: 'Profile', path: 'user-profile' },
