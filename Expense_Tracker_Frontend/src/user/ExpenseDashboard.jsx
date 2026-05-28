@@ -35,7 +35,7 @@ export const ExpenseDashboard = () => {
         </p>
         <h1 className="text-3xl font-semibold text-slate-950">Expense Dashboard</h1>
         <p className="text-slate-500 mt-3 max-w-2xl">
-          Track categories, records, budgets, and reports from the navigation above.
+          Track categories, records, budgets, and reports from the sidebar.
         </p>
       </section>
 

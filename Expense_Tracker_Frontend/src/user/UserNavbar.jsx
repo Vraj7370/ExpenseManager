@@ -1,11 +1,42 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { clearAuth } from '../utils/auth';
 
+const navSections = [
+  {
+    label: 'Main',
+    links: [{ name: 'Dashboard', path: '' }],
+  },
+  {
+    label: 'Manage',
+    links: [
+      { name: 'Add Category', path: 'add-category' },
+      { name: 'Categories', path: 'my-categories' },
+      { name: 'Add Record', path: 'add-expense' },
+      { name: 'Records', path: 'my-expenses' },
+      { name: 'Add Budget', path: 'add-budget' },
+      { name: 'Budgets', path: 'my-budgets' },
+    ],
+  },
+  {
+    label: 'Reports',
+    links: [
+      { name: 'Category Report', path: 'reports' },
+      { name: 'Payment Report', path: 'report1' },
+    ],
+  },
+  {
+    label: 'Account',
+    links: [
+      { name: 'Profile', path: 'user-profile' },
+      { name: 'Settings', path: 'settings' },
+    ],
+  },
+];
+
 export const UserNavbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -14,130 +45,104 @@ export const UserNavbar = () => {
     navigate('/login', { replace: true });
   };
 
-  // Array of links for easy management
-  const navLinks = [
-    { name: 'Dashboard', path: '' },
-    { name: 'Add Category', path: 'add-category' },
-    { name: 'Categories', path: 'my-categories' },
-    { name: 'Add Record', path: 'add-expense' },
-    { name: 'Records', path: 'my-expenses' },
-    { name: 'Add Budget', path: 'add-budget' },
-    { name: 'Budgets', path: 'my-budgets' },
-    { name: 'Category Report', path: 'reports' },
-    { name: 'Payment Report', path: 'report1' },
-    { name: 'Profile', path: 'user-profile' },
-    { name: 'Settings', path: 'settings' },
-  ];
+  const linkClasses = ({ isActive }) =>
+    `block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-primary-50 text-primary-800'
+        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+    }`;
 
-  return (
-    <div className="min-h-screen bg-bg-muted flex flex-col">
-      <nav className="bg-white border-b border-slate-200 shrink-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between min-h-16">
-          <div className="flex min-w-0">
-            {/* Logo */}
-            <div className="shrink-0 flex items-center pr-6">
-              <span className="text-xl font-semibold text-slate-900 tracking-tight">
-                Expense Tracker
-              </span>
-            </div>
-            
-            {/* Desktop Menu */}
-            <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-x-1 sm:gap-y-2 py-3">
-              {navLinks.map((link, index) => (
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Brand */}
+      <div className="px-5 py-5 border-b border-slate-200">
+        <span className="text-lg font-semibold text-slate-900 tracking-tight">
+          Expense Tracker
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {navSections.map((section) => (
+          <div key={section.label}>
+            <p className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.links.map((link) => (
                 <NavLink
-                  key={index}
+                  key={link.path}
                   to={link.path}
-                  className={({ isActive }) =>
-                    `inline-flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-800'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-                    }`
-                  }
+                  end={link.path === ''}
+                  onClick={() => setSidebarOpen(false)}
+                  className={linkClasses}
                 >
                   {link.name}
                 </NavLink>
               ))}
             </div>
           </div>
-
-          <div className="hidden sm:flex items-center shrink-0">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors"
-            >
-              <LogOut size={16} />
-              Log out
-            </button>
-          </div>
-          
-          {/* Mobile menu button */}
-          <div className="-mr-2 flex items-center sm:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-slate-600 hover:text-slate-950 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-300"
-              aria-controls="mobile-menu"
-              aria-expanded="false"
-            >
-              <span className="sr-only">Open main menu</span>
-              {/* Icon when menu is closed */}
-              {!isOpen ? (
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              ) : (
-                /* Icon when menu is open */
-                <svg className="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {isOpen && (
-        <div className="sm:hidden" id="mobile-menu">
-          <div className="pt-2 pb-3 space-y-1 bg-white border-t border-slate-200">
-            {navLinks.map((link, index) => (
-              <NavLink
-                key={index}
-                to={link.path}
-                onClick={() => setIsOpen(false)}
-                className={({ isActive }) =>
-                  `block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                    isActive
-                      ? 'bg-primary-50 border-primary text-primary-800'
-                      : 'border-transparent text-slate-600 hover:bg-slate-100 hover:border-slate-300 hover:text-slate-950'
-                  }`
-                }
-              >
-                {link.name}
-              </NavLink>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                setIsOpen(false);
-                handleLogout();
-              }}
-              className="w-full text-left block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-            >
-              Log out
-            </button>
-          </div>
-        </div>
-      )}
+        ))}
       </nav>
-      
-      {/* Dashboard Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Outlet />
-      </main>
+
+      {/* Logout */}
+      <div className="px-3 py-4 border-t border-slate-200">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors"
+        >
+          Log out
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-bg-muted flex">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+
+      {/* Main area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <header className="md:hidden bg-white border-b border-slate-200 px-4 h-14 flex items-center shrink-0">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-300"
+            aria-label="Open sidebar"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="ml-3 text-lg font-semibold text-slate-900 tracking-tight">
+            Expense Tracker
+          </span>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-5xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 };
