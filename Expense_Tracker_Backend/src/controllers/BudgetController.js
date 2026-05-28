@@ -1,26 +1,59 @@
 const budgetSchema = require("../models/BudgetModel")
 const expenseSchema = require("../models/ExpenseModel")
+const mongoose = require("mongoose")
+
+const toDate = (value) => {
+    if (!value) return null
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? null : d
+}
+
+// Make date-range matching stable for "date-only" inputs coming from <input type="date">
+// We treat the range as inclusive for the whole day in UTC.
+const startOfDayUTC = (date) => {
+    const d = new Date(date)
+    d.setUTCHours(0, 0, 0, 0)
+    return d
+}
+
+const endOfDayUTC = (date) => {
+    const d = new Date(date)
+    d.setUTCHours(23, 59, 59, 999)
+    return d
+}
 
 const buildExpenseDateFilter = (budget) => {
     const filter = {}
-    if (budget.createdDate) filter.$gte = budget.createdDate
-    if (budget.endDate) filter.$lte = budget.endDate
+    const start = toDate(budget.createdDate)
+    const end = toDate(budget.endDate)
+    if (start) filter.$gte = startOfDayUTC(start)
+    if (end) filter.$lte = endOfDayUTC(end)
     return Object.keys(filter).length ? filter : null
 }
 
 const getSpentForBudget = async (userId, budget) => {
     const query = {
-        userId,
-        amount: { $exists: true },
-        income: { $exists: false }
+        userId: mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId,
+        amount: { $type: "number", $gt: 0 },
+        $or: [{ income: { $exists: false } }, { income: null }]
     }
     const dateFilter = buildExpenseDateFilter(budget)
-    if (dateFilter) query.expenseDate = dateFilter
+    const pipeline = [{ $match: query }]
 
-    const result = await expenseSchema.aggregate([
-        { $match: query },
-        { $group: { _id: null, total: { $sum: "$amount" } } }
-    ])
+    // Some datasets may have `expenseDate` stored as string; normalize to Date for matching.
+    pipeline.push({
+        $addFields: {
+            __expenseDate: { $toDate: "$expenseDate" }
+        }
+    })
+
+    if (dateFilter) {
+        pipeline.push({ $match: { __expenseDate: dateFilter } })
+    }
+
+    pipeline.push({ $group: { _id: null, total: { $sum: "$amount" } } })
+
+    const result = await expenseSchema.aggregate(pipeline)
 
     return result[0]?.total || 0
 }

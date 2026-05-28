@@ -15,11 +15,23 @@ import {
 
 export const AddExpense = () => {
 
+  const toDateInput = (date = new Date()) => {
+    const d = new Date(date)
+    const offset = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - offset * 60 * 1000)
+    return local.toISOString().split('T')[0]
+  }
+
   const {
     register,
     handleSubmit,
-    reset
-  } = useForm()
+    reset,
+    formState: { errors }
+  } = useForm({
+    defaultValues: {
+      expenseDate: toDateInput()
+    }
+  })
 
   const [categories, setCategories] = useState([])
   const [selectedFile, setSelectedFile] = useState("")
@@ -240,9 +252,15 @@ export const AddExpense = () => {
               <input
                 type="number"
                 placeholder="Enter amount"
-                {...register("amount")}
+                {...register("amount", {
+                  required: "Amount is required",
+                  min: { value: 0.01, message: "Amount must be greater than 0" }
+                })}
                 className={inputClass}
               />
+              {errors.amount && (
+                <p className="text-red-600 text-sm mt-2">{errors.amount.message}</p>
+              )}
             </div>
 
             <div>
@@ -253,9 +271,14 @@ export const AddExpense = () => {
 
               <input
                 type="date"
-                {...register("expenseDate")}
+                {...register("expenseDate", {
+                  required: "Date is required"
+                })}
                 className={inputClass}
               />
+              {errors.expenseDate && (
+                <p className="text-red-600 text-sm mt-2">{errors.expenseDate.message}</p>
+              )}
             </div>
           </div>
 

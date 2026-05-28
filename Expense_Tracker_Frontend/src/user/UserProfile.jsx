@@ -127,7 +127,7 @@ export const UserProfile = () => {
                                         </div>
                                     )
                                 }
-                                <button 
+                                <button
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={uploadingPic}
                                     className="absolute bottom-1 right-1 p-2 bg-primary text-white rounded-full shadow-md hover:bg-slate-800 transition-colors disabled:opacity-50"
@@ -135,11 +135,11 @@ export const UserProfile = () => {
                                 >
                                     <Camera size={16} />
                                 </button>
-                                <input 
-                                    type="file" 
-                                    ref={fileInputRef} 
-                                    onChange={handleFileChange} 
-                                    className="hidden" 
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileChange}
+                                    className="hidden"
                                     accept="image/*"
                                 />
                             </div>

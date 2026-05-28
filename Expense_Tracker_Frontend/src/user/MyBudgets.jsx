@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
-import { Pencil, Trash2, Wallet, X } from 'lucide-react'
+import { Pencil, RefreshCcw, Trash2, Wallet, X } from 'lucide-react'
 import {
   deleteBudget,
   fetchBudgets,
@@ -59,6 +59,12 @@ export const MyBudgets = () => {
 
   useEffect(() => {
     loadBudgets()
+  }, [loadBudgets])
+
+  useEffect(() => {
+    const onFocus = () => loadBudgets()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [loadBudgets])
 
   const openEdit = (budget) => {
@@ -141,6 +147,15 @@ export const MyBudgets = () => {
           <span className="px-3 py-2 bg-white text-slate-700 rounded-md text-sm border border-slate-200">
             Total: {budgets.length}
           </span>
+          <button
+            type="button"
+            onClick={loadBudgets}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-primary-200 hover:text-primary transition-colors disabled:opacity-60"
+          >
+            <RefreshCcw size={16} />
+            Refresh
+          </button>
           <button
             type="button"
             onClick={() => navigate('/add-budget')}
