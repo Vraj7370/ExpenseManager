@@ -71,6 +71,7 @@ export const UserProfile = () => {
             if (res.status === 200) {
                 toast.success("Profile picture updated")
                 setUser(res.data.data)
+                window.dispatchEvent(new CustomEvent('profile-updated'))
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to upload picture")

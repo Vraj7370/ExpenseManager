@@ -10,10 +10,10 @@ import { Report } from "../user/Report"
 import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
 import { Settings } from "../user/Settings"
-import { AddBudget } from "../user/AddBudget"
-import { MyBudgets } from "../user/MyBudgets"
 import { Sigup } from "../common/Sigup"
 import { GuestRoute, ProtectedRoute } from "./RouteGuards"
+import { AddBudget } from "../user/AddBudget"
+import { MyBudgets } from "../user/MyBudgets"
 
 
 const AppRoutes = () => {
@@ -44,7 +44,7 @@ const AppRoutes = () => {
             ),
             children: [
                 {
-                    path: "",   // default child route
+                    path: "",
                     element: <ExpenseDashboard />
                 },
                 {
@@ -64,12 +64,12 @@ const AppRoutes = () => {
                     element:<MyExpenses />
                 },
                 {
-                    path: "add-budget",
-                    element: <AddBudget />
+                    path:"add-budget",
+                    element:<AddBudget />
                 },
                 {
-                    path: "my-budgets",
-                    element: <MyBudgets />
+                    path:"my-budgets",
+                    element:<MyBudgets />
                 },
                 {
                     path:"reports",
