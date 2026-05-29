@@ -1,33 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../api/axiosInstance';
 import { UserAvatar } from '../components/UserAvatar';
 import { clearAuth } from '../utils/auth';
 
-const navGroups = [
+const navSections = [
   {
     label: 'Main',
     links: [{ name: 'Dashboard', path: '' }],
   },
   {
-    label: 'Categories',
+    label: 'Manage',
     links: [
       { name: 'Add Category', path: 'add-category' },
       { name: 'Categories', path: 'my-categories' },
-    ],
-  },
-  {
-    label: 'Records',
-    links: [
       { name: 'Add Record', path: 'add-expense' },
       { name: 'Records', path: 'my-expenses' },
-    ],
-  },
-  {
-    label: 'Budgets',
-    links: [
       { name: 'Add Budget', path: 'add-budget' },
       { name: 'Budgets', path: 'my-budgets' },
     ],
@@ -48,37 +37,11 @@ const navGroups = [
   },
 ];
 
-const pageTitles = {
-  '': 'Dashboard',
-  'add-category': 'Add Category',
-  'my-categories': 'Categories',
-  'add-expense': 'Add Record',
-  'my-expenses': 'Records',
-  'add-budget': 'Add Budget',
-  'my-budgets': 'Budgets',
-  reports: 'Category Report',
-  report1: 'Payment Report',
-  'user-profile': 'Profile',
-  settings: 'Settings',
-};
-
-const sidebarLinkClass = ({ isActive }) =>
-  `block rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-1 ${
-    isActive
-      ? 'bg-primary-50 text-primary-800'
-      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
-  }`;
-
-const getPageKey = (pathname) => pathname.replace(/^\//, '').split('/')[0] || '';
-
 export const UserNavbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const pageKey = getPageKey(location.pathname);
-  const pageTitle = pageTitles[pageKey] || 'Expense Tracker';
 
   const loadUser = useCallback(async () => {
     try {
@@ -100,7 +63,7 @@ export const UserNavbar = () => {
   }, [loadUser]);
 
   useEffect(() => {
-    setIsOpen(false);
+    setSidebarOpen(false);
     loadUser();
   }, [location.pathname, loadUser]);
 
@@ -116,143 +79,122 @@ export const UserNavbar = () => {
   }, [loadUser]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!sidebarOpen) return;
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') setIsOpen(false);
+      if (e.key === 'Escape') setSidebarOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [isOpen]);
+  }, [sidebarOpen]);
 
-  const renderSidebarNav = (onNavigate) => (
-    <div className="space-y-3">
-      {navGroups.map((group) => (
-        <section key={group.label}>
-          <p className="px-2.5 pb-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            {group.label}
-          </p>
-          <div className="space-y-0.5">
-            {group.links.map((link) => (
-              <NavLink
-                key={link.path || 'dashboard'}
-                to={link.path}
-                end={link.path === ''}
-                onClick={onNavigate}
-                className={sidebarLinkClass}
-              >
-                {link.name}
-              </NavLink>
-            ))}
+  const linkClasses = ({ isActive }) =>
+    `block rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-1 ${
+      isActive
+        ? 'bg-primary-50 text-primary-800'
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
+    }`;
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full">
+      {/* Brand */}
+      <div className="px-5 py-5 border-b border-slate-200">
+        <span className="text-lg font-semibold text-slate-900 tracking-tight">
+          Expense Tracker
+        </span>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {navSections.map((section) => (
+          <div key={section.label}>
+            <p className="px-3 mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.links.map((link) => (
+                <NavLink
+                  key={link.path || 'dashboard'}
+                  to={link.path}
+                  end={link.path === ''}
+                  onClick={() => setSidebarOpen(false)}
+                  className={linkClasses}
+                >
+                  {link.name}
+                </NavLink>
+              ))}
+            </div>
           </div>
-        </section>
-      ))}
+        ))}
+      </nav>
+
+      {/* User + Logout */}
+      <div className="px-3 py-4 border-t border-slate-200 space-y-2">
+        {user && (
+          <NavLink
+            to="user-profile"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-950 transition-colors"
+          >
+            <UserAvatar user={user} size="sm" />
+            <span className="truncate">{user.firstName || 'Profile'}</span>
+          </NavLink>
+        )}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full text-left rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors"
+        >
+          Log out
+        </button>
+      </div>
     </div>
   );
 
-  const TopNavbar = ({ showMenuButton = false }) => (
-    <header className="sticky top-0 z-30 shrink-0 border-b border-slate-200 bg-white">
-      <div className="flex h-14 items-center gap-3 px-4 sm:px-6">
-        {showMenuButton ? (
-          <button
-            type="button"
-            onClick={() => setIsOpen(true)}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 lg:hidden"
-            aria-label="Open menu"
-            aria-expanded={isOpen}
-          >
-            <Menu size={18} />
-          </button>
-        ) : null}
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-            Expense Tracker
-          </p>
-          <h1 className="truncate text-sm font-semibold text-slate-950 sm:text-base">
-            {pageTitle}
-          </h1>
-        </div>
-
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <NavLink
-            to="user-profile"
-            className={({ isActive }) =>
-              `inline-flex items-center gap-2 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
-                isActive
-                  ? 'bg-primary-50 text-primary-800'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-              }`
-            }
-          >
-            <UserAvatar user={user} size="sm" />
-            <span className="hidden sm:inline text-sm font-medium max-w-[8rem] truncate">
-              {user?.firstName || 'Profile'}
-            </span>
-            <span className="sm:hidden text-sm font-medium">Profile</span>
-          </NavLink>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200"
-          >
-            Log out
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-
   return (
-    <div className="min-h-screen bg-bg-muted flex flex-col lg:flex-row">
-      {/* Desktop sidebar — full navigation */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-56 lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 bg-white border-r border-slate-200">
-        <div className="h-14 flex items-center px-4 border-b border-slate-200 shrink-0">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-slate-950 truncate">Expense Tracker</p>
-            <p className="text-[11px] text-slate-500 truncate">All pages</p>
-          </div>
-        </div>
-
-        <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Sidebar navigation">
-          {renderSidebarNav()}
-        </nav>
-      </aside>
-
-      {/* Mobile drawer */}
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu">
-          <button
-            type="button"
-            className="fixed inset-0 bg-slate-900/40"
-            onClick={() => setIsOpen(false)}
-            aria-label="Close menu"
-          />
-          <aside className="relative flex w-[min(17rem,88vw)] flex-col bg-white border-r border-slate-200 shadow-xl">
-            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-200 shrink-0">
-              <span className="text-sm font-semibold text-slate-950">Menu</span>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-slate-500 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200"
-                aria-label="Close menu"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <nav className="flex-1 overflow-y-auto px-2 py-3">
-              {renderSidebarNav(() => setIsOpen(false))}
-            </nav>
-          </aside>
-        </div>
+    <div className="min-h-screen bg-bg-muted flex">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
+        />
       )}
 
-      {/* Main column: top navbar + page content */}
-      <div className="flex flex-1 flex-col min-w-0 lg:pl-56">
-        <TopNavbar showMenuButton />
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-40 w-60 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:shrink-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {sidebarContent}
+      </aside>
 
-        <main className="flex-1 w-full py-5 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <Outlet />
+      {/* Main area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <header className="md:hidden bg-white border-b border-slate-200 px-4 h-14 flex items-center shrink-0">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-300"
+            aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <span className="ml-3 text-lg font-semibold text-slate-900 tracking-tight">
+            Expense Tracker
+          </span>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-5xl mx-auto">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
