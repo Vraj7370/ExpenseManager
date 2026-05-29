@@ -20,6 +20,12 @@ app.use("/exp", expenseRoutes)
 const budgetRoutes = require("./src/routes/BudgetRoutes")
 app.use("/budget", budgetRoutes)
 
+const notificationRoutes = require("./src/routes/NotificationRoutes")
+app.use("/notification", notificationRoutes)
+
+const notificationRuleRoutes = require("./src/routes/NotificationRuleRoutes")
+app.use("/notificationRule", notificationRuleRoutes)
+
 //DBCONNECTION:
 const DBConnection = require("./src/utils/DBConnection")
 DBConnection()
