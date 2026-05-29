@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axiosInstance from '../api/axiosInstance';
+import { UserAvatar } from '../components/UserAvatar';
 import { clearAuth } from '../utils/auth';
 
 const navSections = [
@@ -37,7 +39,18 @@ const navSections = [
 
 export const UserNavbar = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const loadUser = useCallback(async () => {
+    try {
+      const res = await axiosInstance.get('/user/profile');
+      setUser(res.data?.data || null);
+    } catch {
+      setUser(null);
+    }
+  }, []);
 
   const handleLogout = () => {
     clearAuth();
@@ -45,11 +58,40 @@ export const UserNavbar = () => {
     navigate('/login', { replace: true });
   };
 
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+    loadUser();
+  }, [location.pathname, loadUser]);
+
+  useEffect(() => {
+    const onFocus = () => loadUser();
+    const onProfileUpdated = () => loadUser();
+    window.addEventListener('focus', onFocus);
+    window.addEventListener('profile-updated', onProfileUpdated);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('profile-updated', onProfileUpdated);
+    };
+  }, [loadUser]);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [sidebarOpen]);
+
   const linkClasses = ({ isActive }) =>
-    `block rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+    `block rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 focus-visible:ring-offset-1 ${
       isActive
         ? 'bg-primary-50 text-primary-800'
-        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+        : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
     }`;
 
   const sidebarContent = (
@@ -71,7 +113,7 @@ export const UserNavbar = () => {
             <div className="space-y-0.5">
               {section.links.map((link) => (
                 <NavLink
-                  key={link.path}
+                  key={link.path || 'dashboard'}
                   to={link.path}
                   end={link.path === ''}
                   onClick={() => setSidebarOpen(false)}
@@ -85,8 +127,18 @@ export const UserNavbar = () => {
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-slate-200">
+      {/* User + Logout */}
+      <div className="px-3 py-4 border-t border-slate-200 space-y-2">
+        {user && (
+          <NavLink
+            to="user-profile"
+            onClick={() => setSidebarOpen(false)}
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-950 transition-colors"
+          >
+            <UserAvatar user={user} size="sm" />
+            <span className="truncate">{user.firstName || 'Profile'}</span>
+          </NavLink>
+        )}
         <button
           type="button"
           onClick={handleLogout}
@@ -105,6 +157,7 @@ export const UserNavbar = () => {
         <div
           className="fixed inset-0 z-30 bg-black/40 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-label="Close menu"
         />
       )}
 
@@ -126,6 +179,7 @@ export const UserNavbar = () => {
             onClick={() => setSidebarOpen(true)}
             className="inline-flex items-center justify-center rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-300"
             aria-label="Open sidebar"
+            aria-expanded={sidebarOpen}
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />

@@ -62,6 +62,47 @@ const deleteMyCategory = async(req,res)=>{
 
 
 }
+
+const updateMyCategory = async (req, res) => {
+    try {
+        const { catName, description } = req.body
+
+        if (!catName || !String(catName).trim()) {
+            return res.status(400).json({
+                message: "Category name is required"
+            })
+        }
+
+        const updatedCategory = await incomeCategory.findOneAndUpdate(
+            { _id: req.params.id, userId: req.user._id },
+            {
+                catName: String(catName).trim(),
+                description: description ? String(description).trim() : ""
+            },
+            { new: true, runValidators: true }
+        )
+
+        if (!updatedCategory) {
+            return res.status(404).json({
+                message: "category not found"
+            })
+        }
+
+        res.status(200).json({
+            message: "category updated successfully",
+            data: updatedCategory
+        })
+    } catch (err) {
+        res.status(500).json({
+            message: "error while updating category",
+            err: err.message
+        })
+    }
+}
+
 module.exports = {
-    createIncomeCategory,getIncomecategoriesByUserId,deleteMyCategory
+    createIncomeCategory,
+    getIncomecategoriesByUserId,
+    deleteMyCategory,
+    updateMyCategory
 }
