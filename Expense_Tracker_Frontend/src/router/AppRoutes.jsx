@@ -17,6 +17,7 @@ import { ResetPassword } from "../common/ResetPassword"
 import { GuestRoute, ProtectedRoute } from "./RouteGuards"
 import { AddBudget } from "../user/AddBudget"
 import { MyBudgets } from "../user/MyBudgets"
+import { NotFound } from "../common/NotFound"
 
 
 const AppRoutes = () => {
@@ -109,8 +110,16 @@ const AppRoutes = () => {
                {
                 path:"notifications",
                 element:<Notifications />
+               },
+               {
+                path: "*",
+                element: <NotFound />
                }
             ]
+        },
+        {
+            path: "*",
+            element: <NotFound />
         }
     ])
 

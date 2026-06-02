@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import axiosInstance from '../api/axiosInstance'
 import { ArrowDown, ArrowUp, ExternalLink, Pencil, Trash2, X } from 'lucide-react'
 import { toast } from 'react-toastify'
+import { ExportButtons } from '../components/ExportButtons'
+import { formatRecordRowsForExport } from '../utils/exportData'
 
 const toDateInput = (date = new Date()) => {
   const d = new Date(date)
@@ -187,6 +189,10 @@ export const MyExpenses = () => {
   const controlClass =
     'w-full px-4 py-3 rounded-md border border-slate-300 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-200 focus:border-primary-500'
 
+  const { headers: exportHeaders, rows: exportRows } = formatRecordRowsForExport(expenses, type)
+  const csvRows = [exportHeaders, ...exportRows]
+  const dateSlug = new Date().toISOString().slice(0, 10)
+
   return (
     <div>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-8">
@@ -197,8 +203,19 @@ export const MyExpenses = () => {
           </h1>
           <p className="text-slate-500 text-sm mt-2">Search, sort, edit, and manage your financial records.</p>
         </div>
-        <div className="px-3 py-2 rounded-md text-sm border border-slate-200 bg-white text-slate-700">
-          Total: {expenses.length}
+        <div className="flex flex-col items-end gap-2">
+          <div className="px-3 py-2 rounded-md text-sm border border-slate-200 bg-white text-slate-700">
+            Total: {expenses.length}
+          </div>
+          <ExportButtons
+            filename={`${type}-records-${dateSlug}`}
+            csvRows={csvRows}
+            pdfTitle={`${type === 'expense' ? 'Expense' : 'Income'} records`}
+            pdfSubtitle={`${expenses.length} entries`}
+            pdfHeaders={exportHeaders}
+            pdfRows={exportRows}
+            disabled={loading || expenses.length === 0}
+          />
         </div>
       </div>
 
