@@ -37,7 +37,9 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       clearAuth();
-      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/signup';
+      const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(
+        window.location.pathname
+      );
       if (!isAuthPage) {
         window.location.replace('/login');
       }

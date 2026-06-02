@@ -14,8 +14,12 @@ export const Settings = () => {
   const {
     register,
     handleSubmit,
+    watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm();
+
+  const newPassword = watch('newPassword');
 
   const loadProfile = useCallback(async () => {
     try {
@@ -43,8 +47,22 @@ export const Settings = () => {
     navigate('/login', { replace: true });
   };
 
-  const onPasswordSubmit = async () => {
-    toast.info('Password change is not available on the server yet. Contact your administrator.');
+  const onPasswordSubmit = async (data) => {
+    if (data.newPassword !== data.confirmNewPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+
+    try {
+      await axiosInstance.put('/user/change-password', {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+      toast.success('Password updated successfully');
+      reset();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update password');
+    }
   };
 
   if (loading) {
@@ -90,7 +108,7 @@ export const Settings = () => {
         </div>
         <div className="px-6 py-5">
           <form onSubmit={handleSubmit(onPasswordSubmit)} className="space-y-4 max-w-md">
-            <p className="text-sm text-slate-500 mb-2">Update your password (requires server support).</p>
+            <p className="text-sm text-slate-500 mb-2">Change your password using your current password.</p>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1" htmlFor="currentPassword">
                 Current password
@@ -130,7 +148,10 @@ export const Settings = () => {
                 id="confirmNewPassword"
                 type="password"
                 className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                {...register('confirmNewPassword', { required: 'Please confirm your password' })}
+                {...register('confirmNewPassword', {
+                  required: 'Please confirm your password',
+                  validate: (value) => value === newPassword || 'Passwords do not match',
+                })}
               />
             </div>
             <button

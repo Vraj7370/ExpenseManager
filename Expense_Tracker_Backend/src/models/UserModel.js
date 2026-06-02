@@ -37,6 +37,12 @@ const userSchema = new Schema({
         type:String,
         enum:["Active" , "Not Active"],
         default:"Active"
+    },
+    resetPasswordToken:{
+        type:String
+    },
+    resetPasswordExpires:{
+        type:Date
     }
 })
 module.exports =mongoose.model("users",userSchema)

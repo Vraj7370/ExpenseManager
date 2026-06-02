@@ -11,6 +11,8 @@ import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
 import { Settings } from "../user/Settings"
 import { Sigup } from "../common/Sigup"
+import { ForgotPassword } from "../common/ForgotPassword"
+import { ResetPassword } from "../common/ResetPassword"
 import { GuestRoute, ProtectedRoute } from "./RouteGuards"
 import { AddBudget } from "../user/AddBudget"
 import { MyBudgets } from "../user/MyBudgets"
@@ -32,6 +34,22 @@ const AppRoutes = () => {
             element: (
                 <GuestRoute>
                     <Sigup />
+                </GuestRoute>
+            )
+        },
+        {
+            path: "/forgot-password",
+            element: (
+                <GuestRoute>
+                    <ForgotPassword />
+                </GuestRoute>
+            )
+        },
+        {
+            path: "/reset-password",
+            element: (
+                <GuestRoute>
+                    <ResetPassword />
                 </GuestRoute>
             )
         },

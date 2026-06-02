@@ -1,7 +1,7 @@
 //import axios from 'axios';
 import { useForm } from 'react-hook-form';
 import axios from "../api/axiosInstance"
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { setAuthToken } from '../utils/auth';
 
 export const Login = () => {
@@ -105,9 +105,9 @@ export const Login = () => {
             </div>
 
             <div className="text-sm">
-              <a href="#" className="font-medium text-primary hover:text-primary-hover transition-colors">
+              <Link to="/forgot-password" className="font-medium text-primary hover:text-primary-hover transition-colors">
                 Forgot your password?
-              </a>
+              </Link>
             </div>
           </div>
 

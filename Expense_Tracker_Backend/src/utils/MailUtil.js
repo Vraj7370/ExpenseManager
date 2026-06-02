@@ -66,8 +66,21 @@ async function sendTransactionalEmail(to, subject, payload) {
   await mailSend(to, subject, html, text);
 }
 
+async function sendPasswordResetEmail(to, { firstName, resetUrl } = {}) {
+  const name = firstName ? ` ${firstName}` : "";
+  await sendTransactionalEmail(to, "Reset your Expense Tracker password", {
+    title: "Password reset",
+    intro: `Hi${name}, we received a request to reset your password. Click the button below to choose a new password. This link expires in 1 hour.`,
+    ctaLabel: "Reset password",
+    ctaUrl: resetUrl,
+    footnote:
+      "If you did not request this, you can ignore this email. Your password will stay the same.",
+  });
+}
+
 module.exports = Object.assign(mailSend, {
   mailSend,
   sendWelcomeEmail,
   sendTransactionalEmail,
+  sendPasswordResetEmail,
 });

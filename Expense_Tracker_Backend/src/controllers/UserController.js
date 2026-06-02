@@ -1,6 +1,7 @@
+const crypto = require("crypto")
 const userSchema = require("../models/UserModel")
 const bcrypt = require("bcrypt")
-const { sendWelcomeEmail } = require("../utils/MailUtil")
+const { sendWelcomeEmail, sendPasswordResetEmail } = require("../utils/MailUtil")
 const { uploadToCloudinary } = require("../utils/CloudinaryUtil")
 const jwt = require("jsonwebtoken")
 const secret = process.env.JWT_SECRET || "secret" 
@@ -234,6 +235,114 @@ const updateProfile = async (req, res) => {
     }
 };
 
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+    }
+
+    try {
+        const user = await userSchema.findOne({ email: email.toLowerCase() });
+
+        if (user) {
+            const resetToken = crypto.randomBytes(32).toString("hex");
+            const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+            user.resetPasswordToken = hashedToken;
+            user.resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+            await user.save();
+
+            const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
+            const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+            try {
+                await sendPasswordResetEmail(user.email, {
+                    firstName: user.firstName,
+                    resetUrl,
+                });
+            } catch (mailErr) {
+                console.log("Password reset email failed:", mailErr.message);
+            }
+        }
+
+        res.status(200).json({
+            message: "If an account exists with that email, a password reset link has been sent.",
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Error processing password reset request" });
+    }
+};
+
+const resetPassword = async (req, res) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ message: "Token and new password are required" });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: "password must be at least 6 characters" });
+    }
+
+    try {
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+        const user = await userSchema.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired reset link" });
+        }
+
+        user.password = await bcrypt.hash(password, 10);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: "Password reset successfully. You can sign in now." });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Error resetting password" });
+    }
+};
+
+const changePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({
+            message: "Current password and new password are required",
+        });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ message: "New password must be at least 6 characters" });
+    }
+
+    try {
+        const user = await userSchema.findById(req.user._id);
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!bcrypt.compareSync(currentPassword, user.password)) {
+            return res.status(401).json({ message: "Current password is incorrect" });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        res.status(200).json({ message: "Password updated successfully" });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Error updating password" });
+    }
+};
+
 module.exports = {
     createUser,
     getAllUsers,
@@ -241,5 +350,8 @@ module.exports = {
     loginUser,
     getProfile,
     uploadProfilePic,
-    updateProfile
+    updateProfile,
+    forgotPassword,
+    resetPassword,
+    changePassword,
 }
