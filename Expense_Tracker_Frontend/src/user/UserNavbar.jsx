@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Bell, Menu, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../api/axiosInstance';
+import { fetchAlerts } from '../api/alertService';
+import { filterActiveAlerts } from '../utils/alertStorage';
 import { UserAvatar } from '../components/UserAvatar';
 import { clearAuth } from '../utils/auth';
 
@@ -42,6 +44,7 @@ const navGroups = [
   {
     label: 'Account',
     links: [
+      { name: 'Notifications', path: 'notifications' },
       { name: 'Profile', path: 'user-profile' },
       { name: 'Settings', path: 'settings' },
     ],
@@ -60,6 +63,7 @@ const pageTitles = {
   report1: 'Payment Report',
   'user-profile': 'Profile',
   settings: 'Settings',
+  notifications: 'Notifications',
 };
 
 const sidebarLinkClass = ({ isActive }) =>
@@ -74,6 +78,7 @@ const getPageKey = (pathname) => pathname.replace(/^\//, '').split('/')[0] || ''
 export const UserNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [alertCount, setAlertCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -89,6 +94,15 @@ export const UserNavbar = () => {
     }
   }, []);
 
+  const loadAlertCount = useCallback(async () => {
+    try {
+      const data = await fetchAlerts();
+      setAlertCount(filterActiveAlerts(data).length);
+    } catch {
+      setAlertCount(0);
+    }
+  }, []);
+
   const handleLogout = () => {
     clearAuth();
     toast.success('Logged out successfully');
@@ -97,12 +111,20 @@ export const UserNavbar = () => {
 
   useEffect(() => {
     loadUser();
-  }, [loadUser]);
+    loadAlertCount();
+  }, [loadUser, loadAlertCount]);
 
   useEffect(() => {
     setIsOpen(false);
     loadUser();
-  }, [location.pathname, loadUser]);
+    loadAlertCount();
+  }, [location.pathname, loadUser, loadAlertCount]);
+
+  useEffect(() => {
+    const onAlertsUpdated = () => loadAlertCount();
+    window.addEventListener('alerts-updated', onAlertsUpdated);
+    return () => window.removeEventListener('alerts-updated', onAlertsUpdated);
+  }, [loadAlertCount]);
 
   useEffect(() => {
     const onFocus = () => loadUser();
@@ -174,6 +196,24 @@ export const UserNavbar = () => {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          <NavLink
+            to="notifications"
+            className={({ isActive }) =>
+              `relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
+                isActive
+                  ? 'border-primary-200 bg-primary-50 text-primary'
+                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`
+            }
+            aria-label={`Notifications${alertCount ? `, ${alertCount} alerts` : ''}`}
+          >
+            <Bell size={18} />
+            {alertCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                {alertCount > 9 ? '9+' : alertCount}
+              </span>
+            )}
+          </NavLink>
           <NavLink
             to="user-profile"
             className={({ isActive }) =>

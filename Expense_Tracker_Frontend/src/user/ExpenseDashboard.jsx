@@ -1,20 +1,33 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchBudgets } from '../api/budgetService'
+import axiosInstance from '../api/axiosInstance'
+import { fetchAlerts } from '../api/alertService'
+import { filterActiveAlerts } from '../utils/alertStorage'
+import { ArrowDownCircle, ArrowUpCircle, Scale, TrendingUp } from 'lucide-react'
+import { toast } from 'react-toastify'
 
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString('en-IN')}`
 
+const monthLabel = () =>
+  new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+
 export const ExpenseDashboard = () => {
   const [budgets, setBudgets] = useState([])
+  const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetchBudgets(true)
-        const data = Array.isArray(res.data?.data) ? res.data.data : []
+        const [budgetRes, summaryRes] = await Promise.all([
+          fetchBudgets(true),
+          axiosInstance.get('/exp/summary'),
+        ])
+        const data = Array.isArray(budgetRes.data?.data) ? budgetRes.data.data : []
         setBudgets(data.slice(0, 3))
+        setSummary(summaryRes.data?.data || null)
       } catch (err) {
         console.error(err)
       } finally {
@@ -24,19 +37,86 @@ export const ExpenseDashboard = () => {
     load()
   }, [])
 
+  useEffect(() => {
+    const showAlertToast = async () => {
+      if (sessionStorage.getItem('alert-toast-shown')) return
+      try {
+        const data = await fetchAlerts()
+        const active = filterActiveAlerts(data)
+        if (active.length > 0) {
+          const urgent = active.filter((a) => a.level === 'danger').length
+          toast.info(
+            urgent > 0
+              ? `${urgent} budget exceeded! Check Notifications.`
+              : `You have ${active.length} alert(s). Open Notifications.`,
+            { autoClose: 5000 }
+          )
+          sessionStorage.setItem('alert-toast-shown', '1')
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    showAlertToast()
+  }, [])
+
   const activeBudgets = budgets.filter((b) => b.budgetStatus === 'active')
   const exceededCount = budgets.filter((b) => b.isExceeded).length
+
+  const statCards = [
+    {
+      label: 'Income this month',
+      value: formatCurrency(summary?.totalIncome),
+      icon: ArrowUpCircle,
+      tone: 'text-emerald-600 bg-emerald-50 border-emerald-100',
+    },
+    {
+      label: 'Expense this month',
+      value: formatCurrency(summary?.totalExpense),
+      icon: ArrowDownCircle,
+      tone: 'text-red-600 bg-red-50 border-red-100',
+    },
+    {
+      label: 'Balance',
+      value: formatCurrency(summary?.balance),
+      icon: Scale,
+      tone:
+        (summary?.balance ?? 0) >= 0
+          ? 'text-primary bg-primary-50 border-primary-100'
+          : 'text-amber-700 bg-amber-50 border-amber-100',
+    },
+    {
+      label: 'Transactions',
+      value: loading
+        ? '...'
+        : `${(summary?.expenseCount ?? 0) + (summary?.incomeCount ?? 0)} records`,
+      icon: TrendingUp,
+      tone: 'text-slate-700 bg-slate-50 border-slate-200',
+    },
+  ]
 
   return (
     <div className="space-y-6">
       <section className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 sm:p-8">
-        <p className="text-sm font-semibold tracking-wide uppercase text-primary mb-2">
-          Overview
-        </p>
+        <p className="text-sm font-semibold tracking-wide uppercase text-primary mb-2">Overview</p>
         <h1 className="text-3xl font-semibold text-slate-950">Expense Dashboard</h1>
         <p className="text-slate-500 mt-3 max-w-2xl">
-          Track categories, records, budgets, and reports from the navigation menu.
+          {monthLabel()} — track income, expenses, budgets, and reports from one place.
         </p>
+      </section>
+
+      <section className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {statCards.map(({ label, value, icon: Icon, tone }) => (
+          <div key={label} className={`rounded-lg border p-5 ${tone}`}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</p>
+                <p className="text-2xl font-bold mt-2">{loading && label !== 'Transactions' ? '...' : value}</p>
+              </div>
+              <Icon size={28} className="shrink-0 opacity-70" />
+            </div>
+          </div>
+        ))}
       </section>
 
       <section className="grid md:grid-cols-3 gap-5">
@@ -45,7 +125,7 @@ export const ExpenseDashboard = () => {
           className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm hover:border-primary-200 transition-colors"
         >
           <h2 className="text-lg font-semibold text-slate-950">Records</h2>
-          <p className="text-sm text-slate-500 mt-2">Add and manage income or expense entries.</p>
+          <p className="text-sm text-slate-500 mt-2">Add, edit, and manage income or expense entries.</p>
         </Link>
 
         <Link
@@ -54,9 +134,7 @@ export const ExpenseDashboard = () => {
         >
           <h2 className="text-lg font-semibold text-slate-950">Budgets</h2>
           <p className="text-sm text-slate-500 mt-2">
-            {loading
-              ? 'Loading...'
-              : `${activeBudgets.length} active · ${exceededCount} exceeded`}
+            {loading ? 'Loading...' : `${activeBudgets.length} active · ${exceededCount} exceeded`}
           </p>
         </Link>
 
@@ -97,22 +175,17 @@ export const ExpenseDashboard = () => {
             {budgets.map((budget) => (
               <div key={budget._id} className="border border-slate-100 rounded-lg p-4">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="font-medium text-slate-800">
-                    Limit {formatCurrency(budget.maxAmount)}
-                  </span>
+                  <span className="font-medium text-slate-800">Limit {formatCurrency(budget.maxAmount)}</span>
                   <span className="text-slate-500">{budget.percentUsed ?? 0}% used</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${
-                      budget.isExceeded ? 'bg-red-500' : 'bg-primary'
-                    }`}
+                    className={`h-full rounded-full ${budget.isExceeded ? 'bg-red-500' : 'bg-primary'}`}
                     style={{ width: `${Math.min(100, budget.percentUsed ?? 0)}%` }}
                   />
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Spent {formatCurrency(budget.spent)} · Remaining{' '}
-                  {formatCurrency(budget.remaining)}
+                  Spent {formatCurrency(budget.spent)} · Remaining {formatCurrency(budget.remaining)}
                 </p>
               </div>
             ))}

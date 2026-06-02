@@ -10,6 +10,7 @@ import { Report } from "../user/Report"
 import { Report1 } from "../user/Report1"
 import { UserProfile } from "../user/UserProfile"
 import { Settings } from "../user/Settings"
+import { Notifications } from "../user/Notifications"
 import { Sigup } from "../common/Sigup"
 import { ForgotPassword } from "../common/ForgotPassword"
 import { ResetPassword } from "../common/ResetPassword"
@@ -104,6 +105,10 @@ const AppRoutes = () => {
                {
                 path:"settings",
                 element:<Settings />
+               },
+               {
+                path:"notifications",
+                element:<Notifications />
                }
             ]
         }

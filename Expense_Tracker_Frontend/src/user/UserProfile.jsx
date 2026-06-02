@@ -92,6 +92,7 @@ export const UserProfile = () => {
                 toast.success("Profile updated successfully")
                 setUser(res.data.data)
                 setIsEditing(false)
+                window.dispatchEvent(new CustomEvent('profile-updated'))
             }
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to update profile")

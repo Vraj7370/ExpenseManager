@@ -263,5 +263,6 @@ module.exports = {
     getBudgetsByUserId,
     getBudgetById,
     updateBudget,
-    deleteBudget
+    deleteBudget,
+    attachUsage,
 }

@@ -1,37 +1,55 @@
-//import axios from 'axios';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import axios from "../api/axiosInstance"
+import axios from '../api/axiosInstance';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { setAuthToken } from '../utils/auth';
+import { toast } from 'react-toastify';
+
+const REMEMBER_EMAIL_KEY = 'rememberedEmail';
 
 export const Login = () => {
+  const [submitting, setSubmitting] = useState(false);
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm();
 
-  const navigate = useNavigate()
-  const location = useLocation()
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const onSubmit = async(data) => {
-    
-    console.log('Login Data:', data);
-    const res = await axios.post("/user/login",data)
-    console.log(res)
+  useEffect(() => {
+    const savedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (savedEmail) {
+      setValue('email', savedEmail);
+      setValue('rememberMe', true);
+    }
+  }, [setValue]);
 
-    // Store token in localStorage (standard for JWT Bearer tokens)
-    console.log(res.data.token)
-    setAuthToken(res.data.token);
+  const onSubmit = async (data) => {
+    setSubmitting(true);
+    try {
+      const res = await axios.post('/user/login', {
+        email: data.email.trim().toLowerCase(),
+        password: data.password,
+      });
 
-      if(res.status==200){
+      if (data.rememberMe) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, data.email.trim().toLowerCase());
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      }
+
+      setAuthToken(res.data.token);
+      toast.success('Welcome back!');
       const redirectTo = location.state?.from?.pathname || '/';
       navigate(redirectTo, { replace: true });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed. Check your email and password.');
+    } finally {
+      setSubmitting(false);
     }
-    else{
-      alert("loagin failed..")
-    }
-
   };
 
   return (
@@ -55,12 +73,12 @@ export const Login = () => {
                 errors.email ? 'border-red-500' : 'border-slate-300'
               }`}
               placeholder="you@example.com"
-              {...register('email', { 
+              {...register('email', {
                 required: 'Email is required',
                 pattern: {
                   value: /\S+@\S+\.\S+/,
-                  message: 'Entered value does not match email format'
-                }
+                  message: 'Entered value does not match email format',
+                },
               })}
             />
             {errors.email && (
@@ -79,12 +97,12 @@ export const Login = () => {
                 errors.password ? 'border-red-500' : 'border-slate-300'
               }`}
               placeholder="••••••••"
-              {...register('password', { 
+              {...register('password', {
                 required: 'Password is required',
                 minLength: {
                   value: 6,
-                  message: 'Password must have at least 6 characters'
-                }
+                  message: 'Password must have at least 6 characters',
+                },
               })}
             />
             {errors.password && (
@@ -98,6 +116,7 @@ export const Login = () => {
                 id="remember-me"
                 type="checkbox"
                 className="h-4 w-4 bg-white text-primary focus:ring-primary-300 border-slate-300 rounded cursor-pointer"
+                {...register('rememberMe')}
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-text-muted cursor-pointer">
                 Remember me
@@ -113,17 +132,18 @@ export const Login = () => {
 
           <button
             type="submit"
-            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 active:translate-y-px"
+            disabled={submitting}
+            className="w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 px-4 rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:ring-offset-2 active:translate-y-px disabled:opacity-50"
           >
-            Sign In
+            {submitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
         <div className="mt-8 text-center text-sm text-text-muted">
-          Don't have an account?{' '}
-          <a href="/signup" className="font-semibold text-primary hover:text-primary-hover transition-colors">
+          Don&apos;t have an account?{' '}
+          <Link to="/signup" className="font-semibold text-primary hover:text-primary-hover transition-colors">
             Sign up
-          </a>
+          </Link>
         </div>
       </div>
     </div>

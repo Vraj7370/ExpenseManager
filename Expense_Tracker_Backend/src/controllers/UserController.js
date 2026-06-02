@@ -71,7 +71,7 @@ const getAllUsers = async (req, res) => {
     const query = req.query
 
     try {
-        const users = await userSchema.find(query);
+        const users = await userSchema.find(query).select("-password");
         res.status(200).json({
             message: "users",
             data: users,
@@ -85,19 +85,30 @@ const getAllUsers = async (req, res) => {
     }
 }
 const deleteUser = async (req, res) => {
-
     try {
-        const deletedUser = await userSchema.findByIdAndDelete(req.params.id)
+        const loginUserId = String(req.user._id)
+        const targetId = String(req.params.id)
+
+        if (loginUserId !== targetId) {
+            return res.status(403).json({
+                message: "You can only delete your own account",
+            })
+        }
+
+        const deletedUser = await userSchema.findByIdAndDelete(targetId).select("-password")
+
+        if (!deletedUser) {
+            return res.status(404).json({ message: "User not found" })
+        }
 
         res.status(200).json({
-            message: "user delete sucessfully",
-            data: deletedUser
+            message: "Account deleted successfully",
+            data: deletedUser,
         })
-    }
-    catch (err) {
+    } catch (err) {
         res.status(500).json({
-            message: "user is not deleted",
-            err: err
+            message: "User could not be deleted",
+            err: err,
         })
     }
 }

@@ -3,6 +3,7 @@ const notificationController = require("../controllers/NotificationController")
 const authMiddleware = require("../middleware/AuthMiddleware")
 
 router.post("/", authMiddleware, notificationController.createNotification)
+router.get("/alerts", authMiddleware, notificationController.getMyAlerts)
 router.get("/", authMiddleware, notificationController.getAllNotifications)
 router.get("/:id", authMiddleware, notificationController.getNotificationById)
 router.put("/:id", authMiddleware, notificationController.updateNotification)
