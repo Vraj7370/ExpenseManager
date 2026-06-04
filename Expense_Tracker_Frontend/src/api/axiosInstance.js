@@ -35,11 +35,13 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      const hadToken = Boolean(getAuthToken() || getCookie('token'));
       clearAuth();
       const isAuthPage = ['/login', '/signup', '/forgot-password', '/reset-password'].includes(
         window.location.pathname
       );
-      if (!isAuthPage) {
+      // Only force login when a signed-in session expired — not while browsing as a guest
+      if (hadToken && !isAuthPage) {
         window.location.replace('/login');
       }
     }

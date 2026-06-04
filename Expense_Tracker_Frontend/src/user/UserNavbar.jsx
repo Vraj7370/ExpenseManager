@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, Menu, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import axiosInstance from '../api/axiosInstance';
 import { fetchAlerts } from '../api/alertService';
 import { filterActiveAlerts } from '../utils/alertStorage';
 import { UserAvatar } from '../components/UserAvatar';
-import { clearAuth } from '../utils/auth';
+import { clearAuth, isAuthenticated } from '../utils/auth';
 
 const navGroups = [
   {
@@ -81,6 +81,7 @@ export const UserNavbar = () => {
   const [alertCount, setAlertCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
+  const signedIn = isAuthenticated();
 
   const pageKey = getPageKey(location.pathname);
   const pageTitle = pageTitles[pageKey] || 'Expense Tracker';
@@ -110,23 +111,35 @@ export const UserNavbar = () => {
   };
 
   useEffect(() => {
+    if (!signedIn) {
+      setUser(null);
+      setAlertCount(0);
+      return;
+    }
     loadUser();
     loadAlertCount();
-  }, [loadUser, loadAlertCount]);
+  }, [signedIn, loadUser, loadAlertCount]);
 
   useEffect(() => {
     setIsOpen(false);
+    if (!signedIn) {
+      setUser(null);
+      setAlertCount(0);
+      return;
+    }
     loadUser();
     loadAlertCount();
-  }, [location.pathname, loadUser, loadAlertCount]);
+  }, [location.pathname, signedIn, loadUser, loadAlertCount]);
 
   useEffect(() => {
+    if (!signedIn) return;
     const onAlertsUpdated = () => loadAlertCount();
     window.addEventListener('alerts-updated', onAlertsUpdated);
     return () => window.removeEventListener('alerts-updated', onAlertsUpdated);
-  }, [loadAlertCount]);
+  }, [signedIn, loadAlertCount]);
 
   useEffect(() => {
+    if (!signedIn) return;
     const onFocus = () => loadUser();
     const onProfileUpdated = () => loadUser();
     window.addEventListener('focus', onFocus);
@@ -135,7 +148,7 @@ export const UserNavbar = () => {
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('profile-updated', onProfileUpdated);
     };
-  }, [loadUser]);
+  }, [signedIn, loadUser]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -196,47 +209,67 @@ export const UserNavbar = () => {
         </div>
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
-          <NavLink
-            to="notifications"
-            className={({ isActive }) =>
-              `relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
-                isActive
-                  ? 'border-primary-200 bg-primary-50 text-primary'
-                  : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`
-            }
-            aria-label={`Notifications${alertCount ? `, ${alertCount} alerts` : ''}`}
-          >
-            <Bell size={18} />
-            {alertCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-                {alertCount > 9 ? '9+' : alertCount}
-              </span>
-            )}
-          </NavLink>
-          <NavLink
-            to="user-profile"
-            className={({ isActive }) =>
-              `inline-flex items-center gap-2 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
-                isActive
-                  ? 'bg-primary-50 text-primary-800'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
-              }`
-            }
-          >
-            <UserAvatar user={user} size="sm" />
-            <span className="hidden sm:inline text-sm font-medium max-w-[8rem] truncate">
-              {user?.firstName || 'Profile'}
-            </span>
-            <span className="sm:hidden text-sm font-medium">Profile</span>
-          </NavLink>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200"
-          >
-            Log out
-          </button>
+          {signedIn ? (
+            <>
+              <NavLink
+                to="notifications"
+                className={({ isActive }) =>
+                  `relative inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
+                    isActive
+                      ? 'border-primary-200 bg-primary-50 text-primary'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`
+                }
+                aria-label={`Notifications${alertCount ? `, ${alertCount} alerts` : ''}`}
+              >
+                <Bell size={18} />
+                {alertCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                    {alertCount > 9 ? '9+' : alertCount}
+                  </span>
+                )}
+              </NavLink>
+              <NavLink
+                to="user-profile"
+                className={({ isActive }) =>
+                  `inline-flex items-center gap-2 rounded-md px-2 py-1 sm:px-3 sm:py-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200 ${
+                    isActive
+                      ? 'bg-primary-50 text-primary-800'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
+                  }`
+                }
+              >
+                <UserAvatar user={user} size="sm" />
+                <span className="hidden sm:inline text-sm font-medium max-w-[8rem] truncate">
+                  {user?.firstName || 'Profile'}
+                </span>
+                <span className="sm:hidden text-sm font-medium">Profile</span>
+              </NavLink>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-200"
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                state={{ from: location }}
+                className="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition-colors"
+              >
+                Sign in
+              </Link>
+              <Link
+                to="/signup"
+                className="rounded-md px-3 py-1.5 text-sm font-semibold text-white bg-primary hover:bg-primary-hover transition-colors"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

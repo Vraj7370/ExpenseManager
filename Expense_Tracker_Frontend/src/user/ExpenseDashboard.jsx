@@ -4,6 +4,7 @@ import { fetchBudgets } from '../api/budgetService'
 import axiosInstance from '../api/axiosInstance'
 import { fetchAlerts } from '../api/alertService'
 import { filterActiveAlerts } from '../utils/alertStorage'
+import { isAuthenticated } from '../utils/auth'
 import { ArrowDownCircle, ArrowUpCircle, Scale, TrendingUp } from 'lucide-react'
 import { toast } from 'react-toastify'
 
@@ -17,8 +18,16 @@ export const ExpenseDashboard = () => {
   const [budgets, setBudgets] = useState([])
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const signedIn = isAuthenticated()
 
   useEffect(() => {
+    if (!signedIn) {
+      setBudgets([])
+      setSummary(null)
+      setLoading(false)
+      return
+    }
+
     const load = async () => {
       try {
         const [budgetRes, summaryRes] = await Promise.all([
@@ -35,9 +44,11 @@ export const ExpenseDashboard = () => {
       }
     }
     load()
-  }, [])
+  }, [signedIn])
 
   useEffect(() => {
+    if (!signedIn) return
+
     const showAlertToast = async () => {
       if (sessionStorage.getItem('alert-toast-shown')) return
       try {
@@ -58,7 +69,7 @@ export const ExpenseDashboard = () => {
       }
     }
     showAlertToast()
-  }, [])
+  }, [signedIn])
 
   const activeBudgets = budgets.filter((b) => b.budgetStatus === 'active')
   const exceededCount = budgets.filter((b) => b.isExceeded).length
@@ -95,8 +106,35 @@ export const ExpenseDashboard = () => {
     },
   ]
 
+  const guestStatValue = (label) =>
+    label === 'Transactions' ? 'Sign in to view' : '—'
+
   return (
     <div className="space-y-6">
+      {!signedIn && (
+        <section className="rounded-lg border border-primary-100 bg-primary-50/80 p-5 sm:p-6">
+          <p className="text-sm font-semibold text-primary-900">You&apos;re browsing as a guest</p>
+          <p className="mt-1 text-sm text-slate-600 max-w-2xl">
+            Explore the app layout below. Sign in when you want to add records, budgets, or view your real data.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              to="/login"
+              state={{ from: { pathname: '/' } }}
+              className="inline-flex justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-hover"
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/signup"
+              className="inline-flex justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+            >
+              Create account
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="bg-white border border-slate-200 rounded-lg shadow-sm p-6 sm:p-8">
         <p className="text-sm font-semibold tracking-wide uppercase text-primary mb-2">Overview</p>
         <h1 className="text-3xl font-semibold text-slate-950">Expense Dashboard</h1>
@@ -111,7 +149,13 @@ export const ExpenseDashboard = () => {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide opacity-80">{label}</p>
-                <p className="text-2xl font-bold mt-2">{loading && label !== 'Transactions' ? '...' : value}</p>
+                <p className="text-2xl font-bold mt-2">
+                  {!signedIn
+                    ? guestStatValue(label)
+                    : loading && label !== 'Transactions'
+                      ? '...'
+                      : value}
+                </p>
               </div>
               <Icon size={28} className="shrink-0 opacity-70" />
             </div>
@@ -161,7 +205,14 @@ export const ExpenseDashboard = () => {
           </Link>
         </div>
 
-        {loading ? (
+        {!signedIn ? (
+          <p className="text-slate-500 text-sm">
+            Sign in to see your budgets.{' '}
+            <Link to="/login" state={{ from: { pathname: '/add-budget' } }} className="text-primary font-medium hover:underline">
+              Sign in
+            </Link>
+          </p>
+        ) : loading ? (
           <p className="text-slate-500 text-sm">Loading budgets...</p>
         ) : budgets.length === 0 ? (
           <p className="text-slate-500 text-sm">

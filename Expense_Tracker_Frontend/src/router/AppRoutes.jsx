@@ -14,7 +14,7 @@ import { Notifications } from "../user/Notifications"
 import { Sigup } from "../common/Sigup"
 import { ForgotPassword } from "../common/ForgotPassword"
 import { ResetPassword } from "../common/ResetPassword"
-import { GuestRoute, ProtectedRoute } from "./RouteGuards"
+import { AuthRequiredRoute, GuestRoute } from "./RouteGuards"
 import { AddBudget } from "../user/AddBudget"
 import { MyBudgets } from "../user/MyBudgets"
 import { NotFound } from "../common/NotFound"
@@ -57,11 +57,7 @@ const AppRoutes = () => {
         },
         {
             path: "/",
-            element: (
-                <ProtectedRoute>
-                    <UserNavbar />
-                </ProtectedRoute>
-            ),
+            element: <UserNavbar />,
             children: [
                 {
                     path: "",
@@ -69,47 +65,91 @@ const AppRoutes = () => {
                 },
                 {
                     path: "add-category",
-                    element: <AddCategory />
+                    element: (
+                        <AuthRequiredRoute>
+                            <AddCategory />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path: "my-categories",
-                    element: <GetMyCategories />
+                    element: (
+                        <AuthRequiredRoute>
+                            <GetMyCategories />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"add-expense",
-                    element:<AddExpense />
+                    element: (
+                        <AuthRequiredRoute>
+                            <AddExpense />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"my-expenses",
-                    element:<MyExpenses />
+                    element: (
+                        <AuthRequiredRoute>
+                            <MyExpenses />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"add-budget",
-                    element:<AddBudget />
+                    element: (
+                        <AuthRequiredRoute>
+                            <AddBudget />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"my-budgets",
-                    element:<MyBudgets />
+                    element: (
+                        <AuthRequiredRoute>
+                            <MyBudgets />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"reports",
-                    element:<Report />
+                    element: (
+                        <AuthRequiredRoute>
+                            <Report />
+                        </AuthRequiredRoute>
+                    )
                 },
                 {
                     path:"report1",
-                    element:<Report1 />
+                    element: (
+                        <AuthRequiredRoute>
+                            <Report1 />
+                        </AuthRequiredRoute>
+                    )
                 },
                {
                 path:"user-profile",
-                element:<UserProfile/>
+                element: (
+                    <AuthRequiredRoute>
+                        <UserProfile/>
+                    </AuthRequiredRoute>
+                )
                },
                {
                 path:"settings",
-                element:<Settings />
+                element: (
+                    <AuthRequiredRoute>
+                        <Settings />
+                    </AuthRequiredRoute>
+                )
                },
                {
                 path:"notifications",
-                element:<Notifications />
+                element: (
+                    <AuthRequiredRoute>
+                        <Notifications />
+                    </AuthRequiredRoute>
+                )
                },
                {
                 path: "*",

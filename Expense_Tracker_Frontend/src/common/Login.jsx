@@ -27,6 +27,14 @@ export const Login = () => {
     }
   }, [setValue]);
 
+  useEffect(() => {
+    const message = location.state?.message;
+    if (message) {
+      // toastId prevents duplicate toasts (e.g. React StrictMode runs effects twice in dev)
+      toast.info(message, { toastId: 'auth-required' });
+    }
+  }, [location.state?.message]);
+
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
