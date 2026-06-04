@@ -9,9 +9,8 @@ const getCookie = (name) => {
   return null;
 };
 
-// Create an Axios instance
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:3000', // Adjust your base URL as needed
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 });
 
 // Request interceptor to add the token to headers
