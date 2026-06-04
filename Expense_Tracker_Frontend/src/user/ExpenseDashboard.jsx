@@ -7,6 +7,27 @@ import { filterActiveAlerts } from '../utils/alertStorage'
 import { isAuthenticated } from '../utils/auth'
 import { ArrowDownCircle, ArrowUpCircle, Scale, TrendingUp } from 'lucide-react'
 import { toast } from 'react-toastify'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+} from 'chart.js'
+import { Bar, Doughnut } from 'react-chartjs-2'
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+)
 
 const formatCurrency = (value) =>
   `₹${Number(value || 0).toLocaleString('en-IN')}`
@@ -18,25 +39,38 @@ export const ExpenseDashboard = () => {
   const [budgets, setBudgets] = useState([])
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [transactions, setTransactions] = useState([])
   const signedIn = isAuthenticated()
 
   useEffect(() => {
     if (!signedIn) {
       setBudgets([])
       setSummary(null)
+      setTransactions([])
       setLoading(false)
       return
     }
 
     const load = async () => {
       try {
-        const [budgetRes, summaryRes] = await Promise.all([
+        const [budgetRes, summaryRes, expenseRes, incomeRes] = await Promise.all([
           fetchBudgets(true),
           axiosInstance.get('/exp/summary'),
+          axiosInstance.get('/exp/expbyuserid?type=expense&date=-1'),
+          axiosInstance.get('/exp/expbyuserid?type=income&date=-1')
         ])
         const data = Array.isArray(budgetRes.data?.data) ? budgetRes.data.data : []
         setBudgets(data.slice(0, 3))
         setSummary(summaryRes.data?.data || null)
+
+        const rawExpenses = Array.isArray(expenseRes.data?.data) ? expenseRes.data.data : []
+        const rawIncomes = Array.isArray(incomeRes.data?.data) ? incomeRes.data.data : []
+        const taggedExpenses = rawExpenses.map(item => ({ ...item, recordType: 'expense' }))
+        const taggedIncomes = rawIncomes.map(item => ({ ...item, recordType: 'income' }))
+        const merged = [...taggedExpenses, ...taggedIncomes].sort(
+          (a, b) => new Date(b.expenseDate) - new Date(a.expenseDate)
+        )
+        setTransactions(merged)
       } catch (err) {
         console.error(err)
       } finally {
@@ -45,6 +79,109 @@ export const ExpenseDashboard = () => {
     }
     load()
   }, [signedIn])
+
+  // Aggregate monthly trend for the last 6 months
+  const monthlyTrendData = React.useMemo(() => {
+    if (!transactions.length) return null
+
+    const months = []
+    const now = new Date()
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthName = d.toLocaleString('en-IN', { month: 'short' })
+      const year = d.getFullYear()
+      months.push({
+        label: `${monthName} ${year}`,
+        monthVal: d.getMonth(),
+        yearVal: d.getFullYear(),
+        income: 0,
+        expense: 0
+      })
+    }
+
+    transactions.forEach(t => {
+      const tDate = new Date(t.expenseDate)
+      const tMonth = tDate.getMonth()
+      const tYear = tDate.getFullYear()
+
+      const match = months.find(m => m.monthVal === tMonth && m.yearVal === tYear)
+      if (match) {
+        const amount = Number(t.recordType === 'expense' ? t.amount : t.income || 0)
+        if (t.recordType === 'expense') {
+          match.expense += amount
+        } else {
+          match.income += amount
+        }
+      }
+    })
+
+    return {
+      labels: months.map(m => m.label),
+      datasets: [
+        {
+          label: 'Income',
+          data: months.map(m => m.income),
+          backgroundColor: '#437f65',
+          borderRadius: 4,
+        },
+        {
+          label: 'Expense',
+          data: months.map(m => m.expense),
+          backgroundColor: '#ef4444',
+          borderRadius: 4,
+        }
+      ]
+    }
+  }, [transactions])
+
+  // Aggregate category wise expenses for current month
+  const categoryData = React.useMemo(() => {
+    if (!transactions.length) return null
+
+    const now = new Date()
+    const currentMonth = now.getMonth()
+    const currentYear = now.getFullYear()
+
+    const currentMonthExpenses = transactions.filter(t => {
+      if (t.recordType !== 'expense') return false
+      const tDate = new Date(t.expenseDate)
+      return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear
+    })
+
+    if (!currentMonthExpenses.length) return null
+
+    const categoriesMap = {}
+    currentMonthExpenses.forEach(t => {
+      const catName = t.expCat?.catName || 'Other'
+      const amount = Number(t.amount || 0)
+      categoriesMap[catName] = (categoriesMap[catName] || 0) + amount
+    })
+
+    const labels = Object.keys(categoriesMap)
+    const data = Object.values(categoriesMap)
+
+    const colors = [
+      '#437f65',
+      '#3b82f6',
+      '#ef4444',
+      '#f59e0b',
+      '#10b981',
+      '#6366f1',
+      '#8b5cf6',
+      '#ec4899',
+    ]
+
+    return {
+      labels,
+      datasets: [
+        {
+          data,
+          backgroundColor: colors.slice(0, labels.length),
+          borderWidth: 1,
+        }
+      ]
+    }
+  }, [transactions])
 
   useEffect(() => {
     if (!signedIn) return
@@ -189,6 +326,68 @@ export const ExpenseDashboard = () => {
           <h2 className="text-lg font-semibold text-slate-950">Reports</h2>
           <p className="text-sm text-slate-500 mt-2">Category and payment mode summaries.</p>
         </Link>
+      </section>
+
+      {/* Visual Analytics Section */}
+      <section className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold text-slate-950">Visual Analytics</h2>
+          <p className="text-sm text-slate-500 mt-1">Cash flow trends and category wise expense distribution</p>
+        </div>
+
+        {transactions.length === 0 ? (
+          <p className="text-slate-500 text-sm">No transaction records found to visualize.</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {/* Cash Flow Chart */}
+            <div className="md:col-span-2 relative h-[300px]">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Cash Flow Trend (Last 6 Months)</h3>
+              {monthlyTrendData && (
+                <Bar
+                  data={monthlyTrendData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { position: 'top' }
+                    },
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: (value) => `₹${value}`
+                        }
+                      }
+                    }
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Category Breakdown Chart */}
+            <div className="relative h-[300px] flex flex-col">
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Category Share (This Month)</h3>
+              {categoryData ? (
+                <div className="flex-1 min-h-0 relative">
+                  <Doughnut
+                    data={categoryData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'bottom' }
+                      }
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+                  No expense records found this month
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="bg-white border border-slate-200 rounded-lg shadow-sm p-6">
